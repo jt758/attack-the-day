@@ -1,0 +1,1464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Attack the Day — 75</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Crimson+Pro:ital,wght@0,300;0,400;1,300;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --black: #0a0a0a;
+    --dark: #111111;
+    --panel: #161616;
+    --border: #2a2a2a;
+    --mid: #333333;
+    --text: #e8e4dc;
+    --muted: #666666;
+    --accent: #c8a96e;
+    --accent-dim: #8a6f3e;
+    --red: #c04040;
+    --green: #4a8c5c;
+    --white: #f5f0e8;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--black);
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* NOISE OVERLAY */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 9999;
+    opacity: 0.4;
+  }
+
+  /* NAV */
+  nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    background: rgba(10,10,10,0.95);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 32px;
+    height: 60px;
+    backdrop-filter: blur(8px);
+  }
+
+  .nav-logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    letter-spacing: 3px;
+    color: var(--accent);
+  }
+
+  .nav-links {
+    display: flex;
+    gap: 4px;
+  }
+
+  .nav-btn {
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 8px 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+    border-bottom: 2px solid transparent;
+  }
+
+  .nav-btn:hover { color: var(--text); }
+  .nav-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  /* PAGES */
+  .page { display: none; padding-top: 60px; min-height: 100vh; }
+  .page.active { display: block; }
+
+  /* ===================== DASHBOARD ===================== */
+  .dashboard-hero {
+    padding: 60px 40px 40px;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .dashboard-hero::after {
+    content: 'ATD';
+    position: absolute;
+    right: -20px;
+    top: -20px;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 220px;
+    color: var(--border);
+    line-height: 1;
+    pointer-events: none;
+    user-select: none;
+    opacity: 0.4;
+  }
+
+  .hero-eyebrow {
+    font-size: 11px;
+    letter-spacing: 4px;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  .hero-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(56px, 10vw, 96px);
+    letter-spacing: 6px;
+    line-height: 0.9;
+    color: var(--white);
+  }
+
+  .hero-title span { color: var(--accent); }
+
+  .hero-subtitle {
+    margin-top: 20px;
+    font-family: 'Crimson Pro', serif;
+    font-style: italic;
+    font-size: 18px;
+    color: var(--muted);
+    max-width: 500px;
+  }
+
+  /* STATS ROW */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    border-bottom: 1px solid var(--border);
+  }
+
+  .stat-block {
+    padding: 28px 32px;
+    border-right: 1px solid var(--border);
+  }
+
+  .stat-block:last-child { border-right: none; }
+
+  .stat-label {
+    font-size: 9px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+
+  .stat-value {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 48px;
+    line-height: 1;
+    color: var(--accent);
+  }
+
+  .stat-sub {
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+
+  /* PROGRESS BAR */
+  .progress-section {
+    padding: 32px 40px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .progress-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+
+  .progress-track {
+    height: 4px;
+    background: var(--border);
+    position: relative;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent-dim), var(--accent));
+    transition: width 0.5s ease;
+    position: relative;
+  }
+
+  .progress-fill::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 10px;
+    height: 10px;
+    background: var(--accent);
+    border-radius: 50%;
+    box-shadow: 0 0 12px var(--accent);
+  }
+
+  /* HABITS CHECKLIST */
+  .habits-section {
+    padding: 32px 40px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .section-header {
+    font-size: 10px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 20px;
+  }
+
+  .today-habits {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+  }
+
+  .habit-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    padding: 20px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .habit-card::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: var(--border);
+    transition: background 0.2s;
+  }
+
+  .habit-card:hover { border-color: var(--mid); }
+  .habit-card:hover::before { background: var(--accent-dim); }
+
+  .habit-card.done {
+    border-color: var(--accent-dim);
+    background: rgba(200, 169, 110, 0.05);
+  }
+
+  .habit-card.done::before { background: var(--accent); }
+
+  .habit-icon {
+    font-size: 22px;
+    margin-bottom: 8px;
+  }
+
+  .habit-name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 18px;
+    letter-spacing: 2px;
+    color: var(--text);
+    margin-bottom: 2px;
+  }
+
+  .habit-time {
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 1px;
+  }
+
+  .habit-check {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 20px;
+    height: 20px;
+    border: 1px solid var(--mid);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    color: transparent;
+    transition: all 0.2s;
+  }
+
+  .habit-card.done .habit-check {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--black);
+  }
+
+  /* DAY COMPLETE BANNER */
+  .day-complete {
+    display: none;
+    margin: 20px 40px;
+    background: rgba(200, 169, 110, 0.08);
+    border: 1px solid var(--accent-dim);
+    padding: 20px 28px;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .day-complete.show { display: flex; }
+
+  .day-complete-icon { font-size: 24px; }
+
+  .day-complete-text {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 20px;
+    letter-spacing: 3px;
+    color: var(--accent);
+  }
+
+  .day-complete-sub {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  .mark-day-btn {
+    margin-left: auto;
+    background: var(--accent);
+    border: none;
+    color: var(--black);
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 16px;
+    letter-spacing: 2px;
+    padding: 12px 28px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .mark-day-btn:hover { background: var(--white); }
+
+  /* VERSE OF THE DAY AREA */
+  .verse-section {
+    padding: 32px 40px;
+  }
+
+  .verse-box {
+    background: var(--panel);
+    border-left: 3px solid var(--accent);
+    padding: 24px 28px;
+  }
+
+  .verse-text {
+    font-family: 'Crimson Pro', serif;
+    font-size: 20px;
+    font-style: italic;
+    color: var(--text);
+    line-height: 1.6;
+    margin-bottom: 10px;
+  }
+
+  .verse-ref {
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: var(--accent);
+    text-transform: uppercase;
+  }
+
+  /* ===================== CALENDAR ===================== */
+  .calendar-header {
+    padding: 50px 40px 30px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .calendar-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 52px;
+    letter-spacing: 4px;
+    color: var(--white);
+  }
+
+  .calendar-subtitle {
+    font-size: 10px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-top: 6px;
+  }
+
+  .calendar-grid {
+    padding: 40px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: 8px;
+  }
+
+  .day-cell {
+    aspect-ratio: 1;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s;
+    position: relative;
+    font-family: 'Bebas Neue', sans-serif;
+  }
+
+  .day-cell:hover { border-color: var(--mid); }
+
+  .day-cell .day-num {
+    font-size: 24px;
+    letter-spacing: 1px;
+    color: var(--muted);
+    line-height: 1;
+  }
+
+  .day-cell .day-label {
+    font-size: 8px;
+    letter-spacing: 1px;
+    color: var(--border);
+    margin-top: 3px;
+  }
+
+  .day-cell.completed {
+    background: rgba(200, 169, 110, 0.08);
+    border-color: var(--accent-dim);
+  }
+
+  .day-cell.completed .day-num { color: var(--accent); }
+
+  .day-cell.partial {
+    border-color: var(--mid);
+    background: rgba(255,255,255,0.02);
+  }
+
+  .day-cell.partial .day-num { color: var(--text); }
+
+  .day-cell.today {
+    border-color: var(--accent);
+    box-shadow: 0 0 16px rgba(200, 169, 110, 0.15);
+  }
+
+  .day-cell.today .day-num { color: var(--white); }
+
+  .day-cell .mini-dots {
+    display: flex;
+    gap: 2px;
+    margin-top: 4px;
+  }
+
+  .mini-dot {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--border);
+  }
+
+  .mini-dot.filled { background: var(--accent); }
+
+  .day-cell.future {
+    opacity: 0.3;
+    cursor: default;
+  }
+
+  /* Legend */
+  .cal-legend {
+    padding: 0 40px 40px;
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 10px;
+    letter-spacing: 1px;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+
+  .legend-swatch {
+    width: 12px;
+    height: 12px;
+    border: 1px solid var(--border);
+  }
+
+  .legend-swatch.done { background: rgba(200,169,110,0.2); border-color: var(--accent-dim); }
+  .legend-swatch.partial { border-color: var(--mid); }
+  .legend-swatch.today-s { border-color: var(--accent); box-shadow: 0 0 6px rgba(200,169,110,0.3); }
+
+  /* ===================== JOURNAL ===================== */
+  .journal-header {
+    padding: 50px 40px 30px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+  }
+
+  .journal-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 52px;
+    letter-spacing: 4px;
+    color: var(--white);
+  }
+
+  .new-entry-btn {
+    background: none;
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 16px;
+    letter-spacing: 2px;
+    padding: 12px 24px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .new-entry-btn:hover { background: var(--accent); color: var(--black); }
+
+  /* Entry Editor */
+  .entry-editor {
+    display: none;
+    padding: 32px 40px;
+    border-bottom: 1px solid var(--border);
+    background: var(--panel);
+  }
+
+  .entry-editor.show { display: block; }
+
+  .editor-row {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 16px;
+    align-items: center;
+  }
+
+  .editor-label {
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    min-width: 60px;
+  }
+
+  .editor-input {
+    background: var(--dark);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    padding: 10px 14px;
+    outline: none;
+    transition: border-color 0.2s;
+    width: 200px;
+  }
+
+  .editor-input:focus { border-color: var(--accent-dim); }
+
+  .editor-textarea {
+    background: var(--dark);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'Crimson Pro', serif;
+    font-size: 17px;
+    line-height: 1.7;
+    padding: 20px;
+    outline: none;
+    resize: vertical;
+    width: 100%;
+    min-height: 180px;
+    transition: border-color 0.2s;
+  }
+
+  .editor-textarea:focus { border-color: var(--accent-dim); }
+  .editor-textarea::placeholder { color: var(--mid); font-style: italic; }
+
+  .editor-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 16px;
+    justify-content: flex-end;
+  }
+
+  .btn-save {
+    background: var(--accent);
+    border: none;
+    color: var(--black);
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 16px;
+    letter-spacing: 2px;
+    padding: 12px 28px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-save:hover { background: var(--white); }
+
+  .btn-cancel {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    padding: 12px 20px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-cancel:hover { border-color: var(--mid); color: var(--text); }
+
+  /* Entries List */
+  .entries-list {
+    padding: 32px 40px;
+  }
+
+  .entry-card {
+    border: 1px solid var(--border);
+    margin-bottom: 16px;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+
+  .entry-card:hover { border-color: var(--mid); }
+
+  .entry-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    background: var(--panel);
+    cursor: pointer;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .entry-card-meta {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .entry-day-badge {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    letter-spacing: 2px;
+    color: var(--accent);
+    line-height: 1;
+    min-width: 60px;
+  }
+
+  .entry-date {
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+
+  .entry-title-display {
+    font-family: 'Crimson Pro', serif;
+    font-size: 16px;
+    color: var(--text);
+    margin-top: 3px;
+  }
+
+  .entry-card-body {
+    display: none;
+    padding: 24px 20px;
+    background: var(--dark);
+  }
+
+  .entry-card-body.open { display: block; }
+
+  .entry-body-text {
+    font-family: 'Crimson Pro', serif;
+    font-size: 17px;
+    line-height: 1.75;
+    color: var(--text);
+    white-space: pre-wrap;
+  }
+
+  .entry-card-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+  }
+
+  .btn-sm {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 1px;
+    padding: 6px 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-transform: uppercase;
+  }
+
+  .btn-sm:hover { border-color: var(--mid); color: var(--text); }
+  .btn-sm.danger:hover { border-color: var(--red); color: var(--red); }
+
+  .toggle-arrow {
+    font-size: 12px;
+    color: var(--muted);
+    transition: transform 0.2s;
+  }
+
+  .entry-card-header.open .toggle-arrow { transform: rotate(180deg); }
+
+  /* Empty state */
+  .empty-state {
+    text-align: center;
+    padding: 80px 40px;
+  }
+
+  .empty-icon { font-size: 48px; margin-bottom: 20px; opacity: 0.3; }
+
+  .empty-text {
+    font-family: 'Crimson Pro', serif;
+    font-style: italic;
+    font-size: 18px;
+    color: var(--muted);
+  }
+
+  /* ===================== DAY MODAL ===================== */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(4px);
+  }
+
+  .modal-overlay.show { display: flex; }
+
+  .modal {
+    background: var(--dark);
+    border: 1px solid var(--border);
+    width: 90%;
+    max-width: 520px;
+    max-height: 85vh;
+    overflow-y: auto;
+    position: relative;
+  }
+
+  .modal-header {
+    padding: 24px 28px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+  }
+
+  .modal-day-num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 64px;
+    line-height: 0.9;
+    color: var(--accent);
+  }
+
+  .modal-day-label {
+    font-size: 10px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-top: 8px;
+  }
+
+  .modal-close {
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-size: 20px;
+    cursor: pointer;
+    padding: 4px;
+    transition: color 0.2s;
+  }
+
+  .modal-close:hover { color: var(--text); }
+
+  .modal-body { padding: 24px 28px; }
+
+  .modal-habits {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 24px;
+  }
+
+  .modal-habit-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .modal-habit-row:hover { border-color: var(--mid); }
+  .modal-habit-row.done { border-color: var(--accent-dim); background: rgba(200,169,110,0.05); }
+
+  .modal-habit-info { display: flex; align-items: center; gap: 12px; }
+  .modal-habit-icon { font-size: 18px; }
+
+  .modal-habit-name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 18px;
+    letter-spacing: 2px;
+  }
+
+  .modal-habit-time {
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 1px;
+    margin-top: 1px;
+  }
+
+  .modal-checkbox {
+    width: 22px;
+    height: 22px;
+    border: 1px solid var(--mid);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    color: transparent;
+    transition: all 0.2s;
+  }
+
+  .modal-habit-row.done .modal-checkbox {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--black);
+  }
+
+  .modal-note-section { margin-top: 8px; }
+
+  .modal-note-label {
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+
+  .modal-note-input {
+    width: 100%;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'Crimson Pro', serif;
+    font-size: 16px;
+    line-height: 1.6;
+    padding: 14px 16px;
+    outline: none;
+    resize: vertical;
+    min-height: 100px;
+    transition: border-color 0.2s;
+  }
+
+  .modal-note-input:focus { border-color: var(--accent-dim); }
+  .modal-note-input::placeholder { color: var(--mid); font-style: italic; }
+
+  .modal-footer {
+    padding: 16px 28px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+  }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: var(--dark); }
+  ::-webkit-scrollbar-thumb { background: var(--mid); }
+  ::-webkit-scrollbar-thumb:hover { background: var(--accent-dim); }
+
+  /* Animations */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .page.active > * {
+    animation: fadeUp 0.3s ease both;
+  }
+
+  @media (max-width: 600px) {
+    nav { padding: 0 16px; }
+    .nav-btn { padding: 8px 10px; font-size: 10px; }
+    .dashboard-hero, .calendar-header, .journal-header,
+    .stats-row .stat-block, .habits-section, .progress-section,
+    .verse-section, .calendar-grid, .cal-legend, .entries-list, .entry-editor {
+      padding-left: 20px;
+      padding-right: 20px;
+    }
+    .dashboard-hero::after { font-size: 120px; }
+    .calendar-grid { grid-template-columns: repeat(auto-fill, minmax(60px, 1fr)); gap: 6px; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">ATTACK THE DAY</div>
+  <div class="nav-links">
+    <button class="nav-btn active" onclick="showPage('dashboard')">TODAY</button>
+    <button class="nav-btn" onclick="showPage('calendar')">75 DAYS</button>
+    <button class="nav-btn" onclick="showPage('journal')">JOURNAL</button>
+  </div>
+</nav>
+
+<!-- ============ DASHBOARD PAGE ============ -->
+<div class="page active" id="page-dashboard">
+
+  <div class="dashboard-hero">
+    <div class="hero-eyebrow">75-Day Challenge</div>
+    <div class="hero-title">ATTACK<br><span>THE DAY</span></div>
+    <div class="hero-subtitle" id="hero-date-display">Loading...</div>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-block">
+      <div class="stat-label">Current Day</div>
+      <div class="stat-value" id="stat-current">—</div>
+      <div class="stat-sub">of 75</div>
+    </div>
+    <div class="stat-block">
+      <div class="stat-label">Days Complete</div>
+      <div class="stat-value" id="stat-complete">0</div>
+      <div class="stat-sub">full days</div>
+    </div>
+    <div class="stat-block">
+      <div class="stat-label">Streak</div>
+      <div class="stat-value" id="stat-streak">0</div>
+      <div class="stat-sub">days in a row</div>
+    </div>
+    <div class="stat-block">
+      <div class="stat-label">Days Left</div>
+      <div class="stat-value" id="stat-left">75</div>
+      <div class="stat-sub">remaining</div>
+    </div>
+  </div>
+
+  <div class="progress-section">
+    <div class="progress-label">
+      <span>Progress</span>
+      <span id="progress-pct">0%</span>
+    </div>
+    <div class="progress-track">
+      <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+    </div>
+  </div>
+
+  <div class="habits-section">
+    <div class="section-header">Today's Habits — Check Off As You Go</div>
+    <div class="today-habits" id="today-habits">
+      <!-- rendered by JS -->
+    </div>
+  </div>
+
+  <div class="day-complete" id="day-complete-banner">
+    <div class="day-complete-icon">⚔️</div>
+    <div>
+      <div class="day-complete-text">All Habits Done</div>
+      <div class="day-complete-sub">Lock in today as a complete day</div>
+    </div>
+    <button class="mark-day-btn" onclick="markDayComplete()">MARK DAY COMPLETE</button>
+  </div>
+
+  <div class="verse-section">
+    <div class="section-header">Word for the Day</div>
+    <div class="verse-box">
+      <div class="verse-text" id="verse-text">"The plans of the diligent lead surely to abundance, but everyone who is hasty comes only to poverty."</div>
+      <div class="verse-ref" id="verse-ref">Proverbs 21:5</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ============ CALENDAR PAGE ============ -->
+<div class="page" id="page-calendar">
+  <div class="calendar-header">
+    <div class="calendar-title">75 DAYS</div>
+    <div class="calendar-subtitle">Tap any day to view or update</div>
+  </div>
+  <div class="calendar-grid" id="calendar-grid">
+    <!-- rendered by JS -->
+  </div>
+  <div class="cal-legend">
+    <div class="legend-item"><div class="legend-swatch today-s"></div>Today</div>
+    <div class="legend-item"><div class="legend-swatch done"></div>Complete</div>
+    <div class="legend-item"><div class="legend-swatch partial"></div>Partial</div>
+    <div class="legend-item"><div class="legend-swatch"></div>Future</div>
+  </div>
+</div>
+
+<!-- ============ JOURNAL PAGE ============ -->
+<div class="page" id="page-journal">
+  <div class="journal-header">
+    <div>
+      <div class="journal-title">JOURNAL</div>
+      <div style="font-size:10px;letter-spacing:3px;color:var(--muted);text-transform:uppercase;margin-top:6px;">Your journey in your own words</div>
+    </div>
+    <button class="new-entry-btn" onclick="openEditor()">+ NEW ENTRY</button>
+  </div>
+
+  <div class="entry-editor" id="entry-editor">
+    <div class="editor-row">
+      <span class="editor-label">Day</span>
+      <input type="number" class="editor-input" id="editor-day" min="1" max="75" placeholder="e.g. 1" style="width:100px">
+      <span class="editor-label" style="margin-left:16px">Title</span>
+      <input type="text" class="editor-input" id="editor-title" placeholder="Optional title" style="flex:1;width:auto">
+    </div>
+    <textarea class="editor-textarea" id="editor-body" placeholder="Write freely. What did God say? What did you wrestle with? What are you building? What are you letting go?"></textarea>
+    <div class="editor-actions">
+      <button class="btn-cancel" onclick="closeEditor()">Cancel</button>
+      <button class="btn-save" onclick="saveEntry()">SAVE ENTRY</button>
+    </div>
+  </div>
+
+  <div class="entries-list" id="entries-list">
+    <!-- rendered by JS -->
+  </div>
+</div>
+
+<!-- ============ DAY MODAL ============ -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModalOnOverlay(event)">
+  <div class="modal" id="modal">
+    <div class="modal-header">
+      <div>
+        <div class="modal-day-num" id="modal-day-num">01</div>
+        <div class="modal-day-label" id="modal-day-label">Day One</div>
+      </div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="section-header" style="margin-bottom:14px">Habits</div>
+      <div class="modal-habits" id="modal-habits"></div>
+      <div class="modal-note-section">
+        <div class="modal-note-label">Quick Note</div>
+        <textarea class="modal-note-input" id="modal-note" placeholder="Brief note for this day..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal()">Close</button>
+      <button class="btn-save" onclick="saveModalDay()">SAVE DAY</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== DATA =====
+const HABITS = [
+  { id: 'workout', icon: '🔥', name: 'WORKOUT', time: '20 min' },
+  { id: 'jesus',   icon: '✝️',  name: 'WITH JESUS', time: '20 min' },
+  { id: 'sermon',  icon: '📖',  name: 'SERMON WRITING', time: '20 min' },
+  { id: 'silence', icon: '🌑',  name: 'SILENCE', time: '10 min' },
+];
+
+const VERSES = [
+  { text: '"The plans of the diligent lead surely to abundance, but everyone who is hasty comes only to poverty."', ref: 'Proverbs 21:5' },
+  { text: '"Have I not commanded you? Be strong and courageous. Do not be frightened, and do not be dismayed, for the LORD your God is with you wherever you go."', ref: 'Joshua 1:9' },
+  { text: '"Whatever you do, work heartily, as for the Lord and not for men."', ref: 'Colossians 3:23' },
+  { text: '"I can do all things through him who strengthens me."', ref: 'Philippians 4:13' },
+  { text: '"For I know the plans I have for you, declares the LORD, plans for welfare and not for evil, to give you a future and a hope."', ref: 'Jeremiah 29:11' },
+  { text: '"But they who wait for the LORD shall renew their strength; they shall mount up with wings like eagles; they shall run and not be weary; they shall walk and not faint."', ref: 'Isaiah 40:31' },
+  { text: '"Commit your work to the LORD, and your plans will be established."', ref: 'Proverbs 16:3' },
+  { text: '"Not because I desire a gift: but I desire fruit that may abound to your account."', ref: 'Philippians 4:17' },
+  { text: '"And let us not grow weary of doing good, for in due season we will reap, if we do not give up."', ref: 'Galatians 6:9' },
+  { text: '"Trust in the LORD with all your heart, and do not lean on your own understanding."', ref: 'Proverbs 3:5' },
+];
+
+const STORAGE_KEY = 'atd_data_v2';
+
+function loadData() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch(e) {}
+  return { startDate: null, days: {}, journals: [], todayHabits: {} };
+}
+
+function saveData(data) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+}
+
+let APP = loadData();
+
+// Ensure today habits tracking
+if (!APP.todayHabits) APP.todayHabits = {};
+
+// Fixed start date
+APP.startDate = '2026-05-17';
+saveData(APP);
+
+function todayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function getCurrentDay() {
+  const start = new Date(APP.startDate + 'T00:00:00');
+  const now = new Date(todayStr() + 'T00:00:00');
+  const diff = Math.floor((now - start) / (1000*60*60*24));
+  return Math.min(75, diff + 1); // can be 0 or negative before start
+}
+
+function getDayStr(dayNum) {
+  const start = new Date(APP.startDate + 'T00:00:00');
+  const d = new Date(start.getTime() + (dayNum - 1) * 86400000);
+  return d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+}
+
+function isDayFuture(dayNum) {
+  return dayNum > Math.max(1, getCurrentDay());
+}
+
+function countComplete() {
+  return Object.values(APP.days).filter(d => d.complete).length;
+}
+
+function countStreak() {
+  const cur = getCurrentDay();
+  let streak = 0;
+  for (let i = cur; i >= 1; i--) {
+    const d = APP.days[i];
+    if (d && d.complete) streak++;
+    else if (i < cur) break;
+  }
+  return streak;
+}
+
+function getHabitsDoneCount(dayNum) {
+  const d = APP.days[dayNum];
+  if (!d || !d.habits) return 0;
+  return Object.values(d.habits).filter(Boolean).length;
+}
+
+function allHabitsDone(dayNum) {
+  return getHabitsDoneCount(dayNum) === HABITS.length;
+}
+
+// ===== PAGE NAV =====
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  event.target.classList.add('active');
+  if (id === 'dashboard') renderDashboard();
+  if (id === 'calendar') renderCalendar();
+  if (id === 'journal') renderJournal();
+}
+
+// ===== DASHBOARD =====
+function renderDashboard() {
+  const curRaw = getCurrentDay();
+  const started = curRaw >= 1;
+  const cur = Math.max(1, curRaw);
+  const complete = countComplete();
+  const streak = countStreak();
+  const left = Math.max(0, 75 - Math.max(0, curRaw));
+  const pct = started ? Math.round((curRaw / 75) * 100) : 0;
+
+  document.getElementById('stat-current').textContent = started ? cur : '—';
+  document.getElementById('stat-complete').textContent = complete;
+  document.getElementById('stat-streak').textContent = streak;
+  document.getElementById('stat-left').textContent = left;
+  document.getElementById('progress-pct').textContent = pct + '%';
+  document.getElementById('progress-fill').style.width = pct + '%';
+
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+  document.getElementById('hero-date-display').textContent = started
+    ? dateStr
+    : 'Starts Sunday, May 17 — Get Ready';
+
+  // Verse
+  const vi = Math.max(0, curRaw - 1) % VERSES.length;
+  document.getElementById('verse-text').textContent = VERSES[vi].text;
+  document.getElementById('verse-ref').textContent = VERSES[vi].ref;
+
+  // Today habits — lock if not started
+  const dayData = started ? (APP.days[cur] || { habits: {}, complete: false }) : { habits: {}, complete: false };
+  const container = document.getElementById('today-habits');
+  container.innerHTML = '';
+
+  HABITS.forEach(h => {
+    const done = !!(dayData.habits && dayData.habits[h.id]);
+    const card = document.createElement('div');
+    card.className = 'habit-card' + (done ? ' done' : '');
+    card.innerHTML = `
+      <div class="habit-icon">${h.icon}</div>
+      <div class="habit-name">${h.name}</div>
+      <div class="habit-time">${h.time}</div>
+      <div class="habit-check">✓</div>
+    `;
+    if (started) card.onclick = () => toggleTodayHabit(h.id);
+    else card.style.opacity = '0.35';
+    container.appendChild(card);
+  });
+
+  // Banner
+  const allDone = started && HABITS.every(h => dayData.habits && dayData.habits[h.id]);
+  const banner = document.getElementById('day-complete-banner');
+  if (allDone && !dayData.complete) {
+    banner.classList.add('show');
+  } else {
+    banner.classList.remove('show');
+  }
+}
+
+function toggleTodayHabit(habitId) {
+  const cur = getCurrentDay();
+  if (!APP.days[cur]) APP.days[cur] = { habits: {}, complete: false, note: '' };
+  if (!APP.days[cur].habits) APP.days[cur].habits = {};
+  APP.days[cur].habits[habitId] = !APP.days[cur].habits[habitId];
+  saveData(APP);
+  renderDashboard();
+}
+
+function markDayComplete() {
+  const cur = getCurrentDay();
+  if (!APP.days[cur]) APP.days[cur] = { habits: {}, complete: false, note: '' };
+  APP.days[cur].complete = true;
+  saveData(APP);
+  renderDashboard();
+  document.getElementById('day-complete-banner').classList.remove('show');
+}
+
+// ===== CALENDAR =====
+function renderCalendar() {
+  const cur = getCurrentDay();
+  const grid = document.getElementById('calendar-grid');
+  grid.innerHTML = '';
+
+  for (let i = 1; i <= 75; i++) {
+    const cell = document.createElement('div');
+    const d = APP.days[i];
+    const done = d && d.complete;
+    const partial = !done && d && getHabitsDoneCount(i) > 0;
+    const future = isDayFuture(i);
+    const isToday = i === cur;
+
+    let cls = 'day-cell';
+    if (done) cls += ' completed';
+    else if (partial) cls += ' partial';
+    if (isToday) cls += ' today';
+    if (future && !isToday) cls += ' future';
+
+    const dotsHtml = HABITS.map(h => {
+      const filled = d && d.habits && d.habits[h.id] ? ' filled' : '';
+      return `<div class="mini-dot${filled}"></div>`;
+    }).join('');
+
+    cell.className = cls;
+    cell.innerHTML = `
+      <div class="day-num">${String(i).padStart(2,'0')}</div>
+      <div class="mini-dots">${dotsHtml}</div>
+    `;
+
+    if (!future || isToday) {
+      cell.onclick = () => openModal(i);
+    }
+
+    grid.appendChild(cell);
+  }
+}
+
+// ===== MODAL =====
+let currentModalDay = null;
+
+function openModal(dayNum) {
+  currentModalDay = dayNum;
+  const d = APP.days[dayNum] || { habits: {}, complete: false, note: '' };
+
+  document.getElementById('modal-day-num').textContent = String(dayNum).padStart(2, '0');
+  document.getElementById('modal-day-label').textContent = getDayStr(dayNum);
+
+  const habitsContainer = document.getElementById('modal-habits');
+  habitsContainer.innerHTML = '';
+
+  HABITS.forEach(h => {
+    const done = !!(d.habits && d.habits[h.id]);
+    const row = document.createElement('div');
+    row.className = 'modal-habit-row' + (done ? ' done' : '');
+    row.innerHTML = `
+      <div class="modal-habit-info">
+        <div class="modal-habit-icon">${h.icon}</div>
+        <div>
+          <div class="modal-habit-name">${h.name}</div>
+          <div class="modal-habit-time">${h.time}</div>
+        </div>
+      </div>
+      <div class="modal-checkbox">✓</div>
+    `;
+    row.onclick = () => toggleModalHabit(h.id, row);
+    habitsContainer.appendChild(row);
+  });
+
+  document.getElementById('modal-note').value = d.note || '';
+  document.getElementById('modal-overlay').classList.add('show');
+}
+
+function toggleModalHabit(habitId, row) {
+  if (!APP.days[currentModalDay]) APP.days[currentModalDay] = { habits: {}, complete: false, note: '' };
+  if (!APP.days[currentModalDay].habits) APP.days[currentModalDay].habits = {};
+  APP.days[currentModalDay].habits[habitId] = !APP.days[currentModalDay].habits[habitId];
+  const done = APP.days[currentModalDay].habits[habitId];
+  row.classList.toggle('done', done);
+  saveData(APP);
+}
+
+function saveModalDay() {
+  if (!APP.days[currentModalDay]) APP.days[currentModalDay] = { habits: {}, complete: false, note: '' };
+  APP.days[currentModalDay].note = document.getElementById('modal-note').value;
+  const allDone = allHabitsDone(currentModalDay);
+  if (allDone) APP.days[currentModalDay].complete = true;
+  saveData(APP);
+  closeModal();
+  renderCalendar();
+  renderDashboard();
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('show');
+  currentModalDay = null;
+}
+
+function closeModalOnOverlay(e) {
+  if (e.target === document.getElementById('modal-overlay')) closeModal();
+}
+
+// ===== JOURNAL =====
+let editingEntryIdx = null;
+
+function openEditor(idx = null) {
+  editingEntryIdx = idx;
+  const editor = document.getElementById('entry-editor');
+  editor.classList.add('show');
+
+  if (idx !== null) {
+    const entry = APP.journals[idx];
+    document.getElementById('editor-day').value = entry.day || '';
+    document.getElementById('editor-title').value = entry.title || '';
+    document.getElementById('editor-body').value = entry.body || '';
+  } else {
+    document.getElementById('editor-day').value = getCurrentDay();
+    document.getElementById('editor-title').value = '';
+    document.getElementById('editor-body').value = '';
+  }
+
+  editor.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function closeEditor() {
+  document.getElementById('entry-editor').classList.remove('show');
+  editingEntryIdx = null;
+}
+
+function saveEntry() {
+  const day = parseInt(document.getElementById('editor-day').value) || getCurrentDay();
+  const title = document.getElementById('editor-title').value.trim();
+  const body = document.getElementById('editor-body').value.trim();
+  if (!body) { alert('Write something first.'); return; }
+
+  const entry = { day, title, body, date: new Date().toISOString() };
+
+  if (editingEntryIdx !== null) {
+    APP.journals[editingEntryIdx] = entry;
+  } else {
+    APP.journals.unshift(entry);
+  }
+
+  saveData(APP);
+  closeEditor();
+  renderJournal();
+}
+
+function renderJournal() {
+  const list = document.getElementById('entries-list');
+
+  if (!APP.journals.length) {
+    list.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">✍️</div>
+        <div class="empty-text">No entries yet. Start writing your journey.</div>
+      </div>`;
+    return;
+  }
+
+  list.innerHTML = '';
+  APP.journals.forEach((entry, idx) => {
+    const dateStr = new Date(entry.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    const card = document.createElement('div');
+    card.className = 'entry-card';
+    card.innerHTML = `
+      <div class="entry-card-header" id="ehdr-${idx}" onclick="toggleEntry(${idx})">
+        <div class="entry-card-meta">
+          <div class="entry-day-badge">D${String(entry.day).padStart(2,'0')}</div>
+          <div>
+            <div class="entry-date">${dateStr}</div>
+            ${entry.title ? `<div class="entry-title-display">${entry.title}</div>` : ''}
+          </div>
+        </div>
+        <div class="toggle-arrow">▼</div>
+      </div>
+      <div class="entry-card-body" id="ebody-${idx}">
+        <div class="entry-body-text">${entry.body}</div>
+        <div class="entry-card-actions">
+          <button class="btn-sm" onclick="openEditor(${idx})">Edit</button>
+          <button class="btn-sm danger" onclick="deleteEntry(${idx})">Delete</button>
+        </div>
+      </div>
+    `;
+    list.appendChild(card);
+  });
+}
+
+function toggleEntry(idx) {
+  const hdr = document.getElementById('ehdr-' + idx);
+  const body = document.getElementById('ebody-' + idx);
+  hdr.classList.toggle('open');
+  body.classList.toggle('open');
+}
+
+function deleteEntry(idx) {
+  if (!confirm('Delete this entry?')) return;
+  APP.journals.splice(idx, 1);
+  saveData(APP);
+  renderJournal();
+}
+
+// ===== INIT =====
+renderDashboard();
+</script>
+</body>
+</html>
